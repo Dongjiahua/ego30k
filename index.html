@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>What 30,000 Hours of Ego-centric Video Does Not Teach</title>
+  <meta name="description" content="What 30,000 Hours of Ego-centric Video Does Not Teach.">
+  <meta property="og:title" content="What 30,000 Hours of Ego-centric Video Does Not Teach">
+  <meta property="og:description" content="Scaling ego-centric human video from 300 to 30,000 hours &mdash; what improves with data, what saturates, and what does not.">
+  <meta property="og:type" content="article">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a0a0b'/%3E%3Cpath d='M5 24C10 22 14 18 17 13C20 9 24 8 27 8' fill='none' stroke='%23f2b761' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='5' y1='27' x2='27' y2='27' stroke='%233a3a40' stroke-width='1'/%3E%3Cline x1='5' y1='27' x2='5' y2='5' stroke='%233a3a40' stroke-width='1'/%3E%3C/svg%3E">
+  <meta name="theme-color" content="#f8f7f3">
+  <script src="js/theme.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=3">
+  <style>.site-header { top: env(safe-area-inset-top, 0px); } .paper-ref { font-size: 12px; color: var(--ink-dim); }</style>
+<style>
+/* Highlighted words: colour only, no italic serif */
+.hero h1 em, .section-head h2 em, .footer-intro h2 em, .study-summary em { font-family: inherit; font-style: normal; font-weight: inherit; font-size: inherit; letter-spacing: inherit; line-height: inherit; }
+.section-head h2 em { color: var(--accent); }
+/* Paper figure colours (Figures 1, 4, 5) */
+:root { --fig-agent: #2877b4; --fig-object: #d97827; --fig-edge: #2677f2; --fig-nano: #e51b23; --fig-super: #2a9d58; --fig-ours: #16836b; }
+:root[data-theme="dark"] { --fig-agent: #6aa8dc; --fig-object: #f0a35e; --fig-edge: #74a9f7; --fig-nano: #f26a6f; --fig-super: #5cc78a; --fig-ours: #4fb79c; }
+.agent-dot { background: var(--fig-agent); } .object-dot { background: var(--fig-object); } .ours-dot { background: var(--fig-ours); }
+.plot-readout > span, [data-theme="dark"] .agent-plot .plot-readout > span { color: var(--fig-agent); }
+.object-plot .plot-readout > span, [data-theme="dark"] .object-plot .plot-readout > span { color: var(--fig-object); }
+.design-plot .plot-readout > span, [data-theme="dark"] .design-plot .plot-readout > span { color: var(--fig-ours); }
+/* Figure 1 scale selection */
+#plot-overview .scale-hit { cursor: pointer; }
+#plot-overview .scale-band { fill: var(--ink-dim); opacity: 0; transition: opacity .25s, x .25s; pointer-events: none; }
+#plot-overview .scale-band.is-visible { opacity: .08; }
+#plot-overview .scale-pill { cursor: pointer; outline: none; }
+#plot-overview .scale-pill rect { fill: transparent; stroke: var(--line-strong); stroke-width: 1; transition: fill .2s, stroke .2s; }
+#plot-overview .scale-pill text { fill: var(--ink); transition: fill .2s; }
+#plot-overview .scale-pill:hover rect { stroke: var(--ink-dim); }
+#plot-overview .scale-pill.is-selected rect { fill: var(--ink); stroke: var(--ink); }
+#plot-overview .scale-pill.is-selected text { fill: var(--bg-2); }
+#plot-overview .scale-pill:focus-visible rect { stroke: var(--accent); stroke-width: 2; }
+.hero-sample .comparison-video-frame { position: relative; }
+.hero-sample .comparison-video-frame video { transition: opacity .2s; }
+.hero-sample .comparison-video-frame.is-swapping video { opacity: .45; }
+.hero-mask-legend { display: flex; flex-wrap: wrap; gap: 3px 9px; flex-basis: 100%; font: 9.5px var(--mono); color: var(--ink-dim); }
+.hero-mask-legend > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.hero-mask-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; }
+.hero-mask-legend i.ov { background: #cae5db; } .hero-mask-legend i.gt { background: #dc5a7f; } .hero-mask-legend i.pr { background: #7062bb; }
+.hero-sample .hero-plot-heading { flex-wrap: wrap; row-gap: 5px; }
+#plot-overview .plot-point.is-selectable { cursor: pointer; }
+.scale-pending { position: absolute; top: 8px; right: 8px; padding: 3px 7px; border-radius: 3px; background: rgba(20,22,21,.72); color: #fff; font: 9px var(--mono); letter-spacing: .04em; text-transform: uppercase; pointer-events: none; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#top" aria-label="Ego 30k home">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 26V18M12 26V12M20 26V6M28 26V2" fill="none" stroke="currentColor" stroke-width="5"/></svg>
+      <span>Ego-centric world models</span>
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu <span aria-hidden="true">+</span></button>
+    <nav id="site-nav" aria-label="Paper sections">
+      <a href="#dataset">Dataset</a>
+      <a href="#findings">Findings</a>
+      <a href="#design">Design</a>
+      <a href="#failures">Failure modes</a>
+      <a href="#humanoid">Humanoid transfer</a>
+    </nav>
+    <button class="theme-toggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path class="theme-moon" d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14Z"/><g class="theme-sun"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4.2 4.2l2.1 2.1m11.4 11.4 2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></g></svg><span>Dark mode</span></button>
+    <a class="header-cite" href="#bib">BibTeX <span aria-hidden="true">↗</span></a>
+  </div>
+  <div class="reading-progress" aria-hidden="true"></div>
+</header>
+
+<div class="page">
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main">
+
+    <!-- HERO -->
+    <div class="hero" id="top">
+      <div class="eyebrow">Ego-centric world models</div>
+      <h1>What 30,000 hours of <span class="nowrap">ego-centric</span> video <em>does not teach</em></h1>
+      <div class="hero-identity">
+        <div class="authors">
+          <span><a href="https://dongjiahua.github.io/" target="_blank" rel="noopener">Jiahua Dong</a><sup>1</sup></span>
+          <span><a href="https://miccooper9.github.io/" target="_blank" rel="noopener">Anurag Bagchi</a><sup>2</sup></span>
+          <span><a href="https://offjangir.github.io/" target="_blank" rel="noopener">Yash Jangir</a><sup>3</sup></span>
+          <span><a href="https://zubairirshad.com/" target="_blank" rel="noopener">Muhammad Zubair Irshad</a><sup>4</sup></span>
+          <span><a href="https://zakharos.github.io/" target="_blank" rel="noopener">Sergey Zakharov</a><sup>4</sup></span>
+          <span><a href="https://www.cs.cmu.edu/~hebert/" target="_blank" rel="noopener">Martial Hebert</a><sup>2</sup></span>
+          <span><a href="https://homangab.github.io/" target="_blank" rel="noopener">Homanga Bharadhwaj</a><sup>3</sup></span>
+          <span><a href="https://yxw.web.illinois.edu/" target="_blank" rel="noopener">Yu-Xiong Wang</a><sup>1</sup></span>
+          <span><a href="https://vitorguizilini.github.io/" target="_blank" rel="noopener">Vitor Campagnolo Guizilini</a><sup>4</sup></span>
+          <span><a href="https://pvtokmakov.github.io/home/" target="_blank" rel="noopener">Pavel Tokmakov</a><sup>4</sup></span>
+        </div>
+        <div class="institution-logos" aria-label="Author affiliations">
+          <a href="https://illinois.edu/" target="_blank" rel="noopener" class="institution-logo" aria-label="Affiliation 1: University of Illinois Urbana-Champaign"><sup aria-hidden="true">1</sup><img class="logo-light" src="img/logos/illinois.svg" width="108" height="19" alt=""><img class="logo-dark" src="img/logos/illinois-dark.svg" width="108" height="19" alt=""></a>
+          <a href="https://www.cmu.edu/" target="_blank" rel="noopener" class="institution-logo" aria-label="Affiliation 2: Carnegie Mellon University"><sup aria-hidden="true">2</sup><img class="logo-monochrome" src="img/logos/cmu.svg" width="151" height="14" alt=""></a>
+          <a href="https://www.jhu.edu/" target="_blank" rel="noopener" class="institution-logo" aria-label="Affiliation 3: Johns Hopkins University"><sup aria-hidden="true">3</sup><img class="logo-monochrome" src="img/logos/jhu.svg" width="137" height="32" alt=""></a>
+          <a href="https://www.tri.global/" target="_blank" rel="noopener" class="institution-logo" aria-label="Affiliation 4: Toyota Research Institute"><sup aria-hidden="true">4</sup><img class="logo-light" src="img/logos/tri-light.svg" width="121" height="32" alt=""><img class="logo-dark" src="img/logos/tri-on-dark.svg" width="121" height="32" alt=""></a>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="button" disabled aria-disabled="true">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Paper (coming soon)
+          </button>
+          <a class="btn" aria-disabled="true" tabindex="-1">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Code (soon)
+          </a>
+          <a class="btn" aria-disabled="true" tabindex="-1">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+            Benchmark (soon)
+          </a>
+          <a class="btn" href="#bib">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+            BibTeX
+          </a>
+        </div>
+
+      </div>
+      <figure class="hero-scaling">
+        <div class="hero-figure-grid">
+          <div class="plot-card hero-plot">
+            <div class="hero-plot-heading"><h3>Agent and object fidelity</h3><div class="hero-plot-actions"><span class="hero-variant">Nano baseline · select a scale</span><button class="replay-plots playback-button" type="button" data-replay-plots="overview" aria-label="Replay the opening scaling plot" title="Replay the opening scaling plot"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button></div></div>
+            <svg id="plot-overview"></svg>
+          </div>
+          <div class="hero-sample" id="hero-comparison" data-comparison data-loop="once">
+            <div class="hero-plot-heading"><h3>Trained on <span data-scale-name>30k</span> hours</h3><span class="hero-mask-legend" aria-label="Mask colours: overlap, GT only, predicted only"><span><i class="ov"></i>Overlap</span><span><i class="gt"></i>GT only</span><span><i class="pr"></i>Predicted only</span></span></div>
+            <div class="comparison-panels">
+              <figure><figcaption><span class="comparison-dot gt-dot"></span><b>GT</b></figcaption><div class="comparison-video-frame"><video src="videos/scaling-idx112-gt.mp4" poster="img/scaling-idx112-gt.jpg" muted playsinline preload="metadata" data-comparison-model="gt" aria-label="Ground truth"></video></div></figure>
+              <figure><figcaption><span class="comparison-dot ours-dot"></span><b>Nano · <span data-scale-name>30k</span> h</b></figcaption><div class="comparison-video-frame"><video src="videos/scaling-idx112-30k.mp4" poster="img/scaling-idx112-30k.jpg" muted playsinline preload="metadata" data-comparison-model="ours" aria-label="Nano prediction trained on 30k hours"></video></div><div class="video-toolbar hero-video-controls"><div class="comparison-playback"><div class="playback-cluster" role="group" aria-label="Comparison playback"><button class="playback-button" type="button" data-comparison-play data-playing="false" aria-label="Play comparison videos together" title="Play comparison videos together"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="playback-play-icon" d="M8 5v14l11-7z"/><path class="playback-pause-icon" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button><button class="playback-button" type="button" data-comparison-replay aria-label="Replay agent fidelity comparison" title="Replay agent fidelity comparison"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button><button class="playback-button" type="button" data-comparison-fullscreen aria-label="Full screen comparison" title="Full screen comparison"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg></button></div></div><input class="video-seek" type="range" data-comparison-seek min="0" max="1000" value="0" aria-label="Seek agent fidelity comparison videos together"></div></figure>
+            </div>
+
+            <p class="media-status comparison-status" role="status" hidden></p>
+          </div>
+        </div>
+
+      </figure>
+
+
+    </div>
+
+    <!-- ============ 01 DATASET ============ -->
+    <section id="dataset">
+      <div class="section-head">
+        <div class="num">01 · Dataset</div>
+        <h2>30,012 hours of <em>first-person video</em>.</h2>
+        <p class="lede">
+          We train all models on a large-scale ego-centric dataset of everyday human manipulation: 1.15M first-person clips totalling 30k hours (3.24 × 10<sup>9</sup> frames at 30 fps, mean clip length 94 s), each recording a manipulation activity from a head-mounted camera.
+        </p>
+      </div>
+
+      <div class="dataset-acknowledgment">
+        <a class="dataset-partner" href="https://www.mecka.ai/" target="_blank" rel="noopener"><img src="img/logos/mecka.svg" width="104" height="25" alt="Mecka"></a>
+        <p>We thank <a href="https://www.mecka.ai/" target="_blank" rel="noopener">Mecka</a> for their support with the dataset.</p>
+      </div>
+
+      <div class="dataset-totals" aria-label="Dataset statistics">
+        <div class="metric-cards">
+          <div class="metric-card metric-hours">
+            <span class="metric-index">01 / Duration</span>
+            <div class="metric-heading"><span class="stat-num" aria-label="30,012h"><span data-count="30012" data-decimals="0" aria-hidden="true">30,012</span><span class="unit" aria-hidden="true">h</span></span><span class="stat-label">First-person video</span></div>
+          </div>
+          <div class="metric-card metric-clips">
+            <span class="metric-index">02 / Recordings</span>
+            <div class="metric-heading"><span class="stat-num" aria-label="1,146,100 clips"><span data-count="1.1461" data-decimals="2" aria-hidden="true">1.15</span><span class="unit" aria-hidden="true">M</span></span><span class="stat-label">Clips · mean <span class="nowrap">94.3 seconds</span></span></div>
+          </div>
+          <div class="metric-card metric-tasks">
+            <span class="metric-index">03 / Diversity</span>
+            <div class="metric-heading"><span class="stat-num" aria-label="32,051"><span data-count="32051" data-decimals="0" aria-hidden="true">32,051</span><span class="unit" aria-hidden="true"></span></span><span class="stat-label">Unique tasks</span></div>
+          </div>
+          <div class="metric-card metric-people">
+            <div class="metric-card-heading"><span class="metric-index">04 / People</span><button type="button" class="replay-metrics playback-button" aria-label="Replay the four dataset animations" title="Replay the four dataset animations"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button></div>
+            <div class="metric-heading"><span class="stat-num" aria-label="14,019"><span data-count="14019" data-decimals="0" aria-hidden="true">14,019</span><span class="unit" aria-hidden="true"></span></span><span class="stat-label">Contributors</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="overview-fig">
+        <div>
+          <div class="dataset-sequence" data-sequence>
+            <canvas class="sequence-canvas" width="1280" height="720" role="img" aria-label="Training footage zooms from one video to nine, then rearranges into a 256-clip mosaic"></canvas>
+            <video src="videos/training-zoom.mp4" poster="img/training-zoom.jpg" muted loop playsinline preload="none" controls data-sequence-source aria-label="Original training video mosaic"></video>
+            <video src="videos/teaser-featured.mp4" muted loop playsinline preload="none" data-featured-source hidden></video>
+            <video src="videos/teaser-mosaic.mp4" muted loop playsinline preload="none" data-grid-source hidden></video>
+            <div class="sequence-overlay" aria-hidden="true"><span class="sequence-counter"><b>1</b> <span>clip</span></span></div>
+
+          </div>
+          <div class="sequence-toolbar"><div class="sequence-controls playback-cluster" role="group" aria-label="Dataset video playback">
+              <div class="sequence-playback">
+                <button class="playback-button" type="button" data-sequence-play data-playing="false" aria-label="Play sequence" title="Play sequence"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="playback-play-icon" d="M8 5v14l11-7z"/><path class="playback-pause-icon" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
+                <button class="playback-button" type="button" data-sequence-replay aria-label="Replay the dataset sequence" title="Replay sequence"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button>
+              </div>
+            </div></div>
+          <p class="media-status sequence-status" role="status" hidden></p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ 02 FINDINGS (merged) ============ -->
+    <section id="findings">
+      <div class="section-head">
+        <div class="num">02 · Findings</div>
+        <h2>Scaling reaches the agent’s limit, <em>not the object’s</em>.</h2>
+        <p class="lede">
+          Because we ask whether generic models of object dynamics can be learned from ego-centric human video, we evaluate out of distribution. Our evaluation set comes from a separate recording campaign: none of its sessions appear in training, and since platform, operators and sites all differ, no location or participant is shared. 37% of its environment categories, accounting for a quarter of its clips, never appear in training.
+        </p>
+      </div>
+
+      <div class="findings-toolbar">
+
+        <div class="layer-buttons">
+          <button type="button" class="layer-button skeleton-layer active" id="tog-skeleton" aria-pressed="true"><span class="layer-icon" aria-hidden="true">−</span><span class="layer-label">Remove skeleton conditioning</span></button>
+          <button type="button" class="layer-button active" id="tog-extrap" aria-pressed="true" aria-describedby="projection-note"><span class="layer-icon" aria-hidden="true">−</span><span class="layer-label">Remove 1M-hour projection</span></button>
+          <button type="button" class="replay-plots playback-button" data-replay-plots="findings" aria-label="Replay the findings curves" title="Replay the findings curves"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button>
+        </div>
+        <p class="plot-note" id="projection-note">Dotted extensions are projections beyond 30k hours.</p>
+      </div>
+      <!-- Detailed interactive plots -->
+      <div class="plot-grid">
+        <div class="plot-card agent-plot">
+          <div class="head"><h3><span class="series-dot agent-dot"></span>Agent (hands) fidelity</h3><span class="chart-badge">Hand SCS ↑</span></div>
+          <div class="plot-readout"><span id="score-hand">≈0.785</span><div><span>Hand SCS ↑</span><span class="plot-trend" id="trend-hand">30k hours</span></div></div>
+          <svg id="plot-hand"></svg>
+          <div class="legend mono" id="legend-hand"></div>
+          <div class="callout" id="callout-hand"></div>
+        </div>
+
+        <div class="plot-card object-plot">
+          <div class="head"><h3><span class="series-dot object-dot"></span>Object (manipulated) fidelity</h3><span class="chart-badge">Object SCS ↑</span></div>
+          <div class="plot-readout"><span id="score-object">0.527</span><div><span>Object SCS ↑</span><span class="plot-trend" id="trend-object">30k hours</span></div></div>
+          <svg id="plot-object"></svg>
+          <div class="legend mono" id="legend-object"></div>
+          <div class="callout" id="callout-object"></div>
+        </div>
+      </div>
+
+      <div class="plot-controls original-explainer"><div class="explainer">
+          <div class="thumb" style="background-image:url('img/training-zoom.jpg');"></div>
+          <div class="txt">
+            <b>Ego-centric video comes with 3D hand and body keypoints.</b> We can project them onto the image plane as a coloured skeleton &mdash; hue for finger identity, value for depth &mdash; encode it with the same frozen VAE as the video, and add the tokens directly to the video tokens. The model no longer has to infer the body from action tokens.
+          </div></div></div>
+
+      <!-- Headline findings summary -->
+      <div class="takeaway">
+        <div>
+          <div class="k">Finding 1</div>
+          <div class="v">The agent saturates early; object fidelity converges far below it.</div>
+          <div class="d">Agent SCS gains only <span class="mono">+0.06</span> between 3k and 30k hours and fits an asymptote at <span class="mono">0.811</span>. The object curve keeps rising but from a much lower base, and its ceiling lies far below.</div>
+        </div>
+        <div>
+          <div class="k">Finding 2</div>
+          <div class="v">The agent's data gains can be substituted by conditioning.</div>
+          <div class="d"><span class="mono">300</span> hours with skeleton conditioning reaches the agent fidelity that unconditioned training attains at roughly <span class="mono">15k</span> hours &mdash; a <span class="mono">≈50×</span> reduction &mdash; and both designs converge to nearly the same limit.</div>
+        </div>
+        <div>
+          <div class="k">Finding 3</div>
+          <div class="v">The object ceiling can be raised, not just approached.</div>
+          <div class="d">A supervision scheme that shifts capacity from scene appearance toward object dynamics improves object fidelity, though a substantial gap remains.</div>
+        </div>
+      </div>
+
+      <p style="font-size:13px;color:var(--ink-dim);margin:32px 0 0;">
+        Normalized by the maximum score each category can attain, the agent converges to <b style="color:var(--ink);">86% of its measurable range</b>, and objects to <b style="color:var(--ink);">63%</b>. The limitation is not that object dynamics improve slowly with data &mdash; they improve steadily &mdash; but that the level they converge toward lies far below the agent's.
+      </p>
+    </section>
+
+
+    <!-- ============ 03 DESIGN ============ -->
+    <section id="design">
+      <div class="section-head">
+        <div class="num">03 · Design</div>
+        <h2>Can the object ceiling <em>be moved?</em></h2>
+        <p class="lede">
+          The previous section established a low limit on object fidelity that additional data is unlikely to overcome. We now ask whether changing the supervision can.
+        </p>
+      </div>
+
+      <!-- Dynamic noise -->
+      <div class="design-block">
+        <h3>Object-centric adaptive noise scheduling</h3>
+        <p class="desc">
+          Combining each point’s 3D displacement and tracking reliability with a soft spatial prior around the projected hands, and expanding the resulting scores over neighbouring latent cells, yields a dynamic region map. Within these regions we raise the noise level, so the denoising target can no longer be satisfied by propagating local appearance and must be predicted from context and dynamics. Reweighting adds a small further improvement in combination at no extra cost, so we include it in our final configuration.
+        </p>
+
+        <div class="findings-toolbar design-toolbar">
+          <div class="layer-buttons">
+            <button type="button" class="layer-button ours-layer active" id="tog-ours" aria-pressed="true"><span class="layer-icon" aria-hidden="true">−</span><span class="layer-label">Remove dynamic-region supervision</span></button>
+            <button type="button" class="layer-button active" id="tog-extrap-obj" aria-pressed="true"><span class="layer-icon" aria-hidden="true">−</span><span class="layer-label">Remove 1M-hour projection</span></button>
+            <button type="button" class="replay-plots playback-button" data-replay-plots="design" aria-label="Replay the adaptive noise curves" title="Replay the adaptive noise curves"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button>
+          </div>
+        </div>
+
+        <!-- KEY result: object SCS across scales (full width, interactive) -->
+          <div class="plot-card design-plot">
+          <div class="head"><h3><span class="series-dot ours-dot"></span>Object fidelity across scales</h3><span class="chart-badge">Object SCS ↑</span></div>
+          <div class="plot-readout"><span id="score-ours">0.546</span><div><span>Object SCS ↑</span><span class="plot-trend" id="trend-ours">30k hours</span></div></div>
+          <svg id="plot-object-ours"></svg>
+          <div class="legend mono" id="legend-ours"></div>
+          <div class="callout" id="callout-ours"></div>
+        </div>
+
+
+        <div class="comparison-gallery" id="model-comparison">
+          <div class="comparison-viewer" id="comparison-agent-fidelity" data-comparison>
+            <div class="comparison-heading"><h3 class="comparison-title">Improved agent fidelity</h3></div>
+            <div class="comparison-panels">
+              <figure><figcaption><span class="comparison-dot gt-dot"></span><b>GT</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-agent-fidelity-gt.mp4" data-poster="img/compare-agent-fidelity-gt.jpg" muted playsinline preload="none" data-comparison-model="gt" aria-label="GT: package handling"></video></div></figure>
+              <figure><figcaption><span class="comparison-dot cosmos-dot"></span><b>Cosmos 3</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-agent-fidelity-cosmos.mp4" data-poster="img/compare-agent-fidelity-cosmos.jpg" muted playsinline preload="none" data-comparison-model="cosmos" aria-label="Cosmos 3: package handling"></video></div></figure>
+              <figure><figcaption><span class="comparison-dot ours-dot"></span><b>Ours</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-agent-fidelity-ours.mp4" data-poster="img/compare-agent-fidelity-ours.jpg" muted playsinline preload="none" data-comparison-model="ours" aria-label="Ours: package handling"></video></div><div class="video-toolbar"><div class="comparison-playback"><div class="playback-cluster" role="group" aria-label="Comparison playback"><button class="playback-button" type="button" data-comparison-play data-playing="false" aria-label="Play comparison videos together" title="Play comparison videos together"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="playback-play-icon" d="M8 5v14l11-7z"/><path class="playback-pause-icon" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button><button class="playback-button" type="button" data-comparison-replay aria-label="Replay all three comparison videos" title="Replay all three comparison videos"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button><button class="playback-button" type="button" data-comparison-fullscreen aria-label="Full screen comparison" title="Full screen comparison"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg></button></div></div><input class="video-seek" type="range" data-comparison-seek min="0" max="1000" value="0" aria-label="Seek all comparison videos together"></div></figure>
+            </div>
+
+            <p class="media-status comparison-status" role="status" hidden></p>
+          </div>
+          <div class="comparison-viewer" id="comparison-object-permanence" data-comparison>
+            <div class="comparison-heading"><h3 class="comparison-title">Improved object permanence</h3></div>
+            <div class="comparison-panels">
+              <figure><figcaption><span class="comparison-dot gt-dot"></span><b>GT</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-object-permanence-gt.mp4" data-poster="img/compare-object-permanence-gt.jpg" muted playsinline preload="none" data-comparison-model="gt" aria-label="GT: tape handling"></video></div><p>Ground truth.</p></figure>
+              <figure><figcaption><span class="comparison-dot cosmos-dot"></span><b>Cosmos 3</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-object-permanence-cosmos.mp4" data-poster="img/compare-object-permanence-cosmos.jpg" muted playsinline preload="none" data-comparison-model="cosmos" aria-label="Cosmos 3: tape handling"></video></div><p>Cosmos 3 baseline drops the tape's identity across the interaction.</p></figure>
+              <figure><figcaption><span class="comparison-dot ours-dot"></span><b>Ours</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-object-permanence-ours.mp4" data-poster="img/compare-object-permanence-ours.jpg" muted playsinline preload="none" data-comparison-model="ours" aria-label="Ours: tape handling"></video></div><div class="video-toolbar"><div class="comparison-playback"><div class="playback-cluster" role="group" aria-label="Comparison playback"><button class="playback-button" type="button" data-comparison-play data-playing="false" aria-label="Play comparison videos together" title="Play comparison videos together"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="playback-play-icon" d="M8 5v14l11-7z"/><path class="playback-pause-icon" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button><button class="playback-button" type="button" data-comparison-replay aria-label="Replay all three comparison videos" title="Replay all three comparison videos"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button><button class="playback-button" type="button" data-comparison-fullscreen aria-label="Full screen comparison" title="Full screen comparison"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg></button></div></div><input class="video-seek" type="range" data-comparison-seek min="0" max="1000" value="0" aria-label="Seek all comparison videos together"></div><p>Ours preserves it.</p></figure>
+            </div>
+
+            <p class="media-status comparison-status" role="status" hidden></p>
+          </div>
+          <div class="comparison-viewer" id="comparison-interaction" data-comparison>
+            <div class="comparison-heading"><h3 class="comparison-title">Improved interaction modeling</h3></div>
+            <div class="comparison-panels">
+              <figure><figcaption><span class="comparison-dot gt-dot"></span><b>GT</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-interaction-gt.mp4" data-poster="img/compare-interaction-gt.jpg" muted playsinline preload="none" data-comparison-model="gt" aria-label="GT: paper handling"></video></div><p>Ground truth.</p></figure>
+              <figure><figcaption><span class="comparison-dot cosmos-dot"></span><b>Cosmos 3</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-interaction-cosmos.mp4" data-poster="img/compare-interaction-cosmos.jpg" muted playsinline preload="none" data-comparison-model="cosmos" aria-label="Cosmos 3: paper handling"></video></div><p>The baseline flattens the paper mid-interaction.</p></figure>
+              <figure><figcaption><span class="comparison-dot ours-dot"></span><b>Ours</b></figcaption><div class="comparison-video-frame"><video src="videos/compare-interaction-ours.mp4" data-poster="img/compare-interaction-ours.jpg" muted playsinline preload="none" data-comparison-model="ours" aria-label="Ours: paper handling"></video></div><div class="video-toolbar"><div class="comparison-playback"><div class="playback-cluster" role="group" aria-label="Comparison playback"><button class="playback-button" type="button" data-comparison-play data-playing="false" aria-label="Play comparison videos together" title="Play comparison videos together"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="playback-play-icon" d="M8 5v14l11-7z"/><path class="playback-pause-icon" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button><button class="playback-button" type="button" data-comparison-replay aria-label="Replay all three comparison videos" title="Replay all three comparison videos"><svg class="replay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20 10a8 8 0 1 0 0 5M20 4v6h-6"/></svg></button><button class="playback-button" type="button" data-comparison-fullscreen aria-label="Full screen comparison" title="Full screen comparison"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5"/></svg></button></div></div><input class="video-seek" type="range" data-comparison-seek min="0" max="1000" value="0" aria-label="Seek all comparison videos together"></div><p>Ours retains the correct configuration.</p></figure>
+            </div>
+
+            <p class="media-status comparison-status" role="status" hidden></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============ 04 FAILURES ============ -->
+    <section id="failures">
+      <div class="section-head">
+        <div class="num">04 · Failure modes</div>
+        <h2>Remaining <em>failure modes</em>.</h2>
+        <p class="lede">
+          Though our method improves the agent fidelity and some aspects of object interaction, as illustrated by the package handling sample, we still observe several failure modes.
+        </p>
+      </div>
+
+      <div class="gallery-controls" data-tabs data-tab-targets=".gallery > .cell">
+        <button class="tab active" data-tab="contact">Contact modeling</button>
+        <button class="tab" data-tab="physics">Physical properties</button>
+        <button class="tab" data-tab="perm">Object permanence</button>
+        <button class="tab" data-tab="nonrigid">Non-rigid dynamics</button>
+      </div>
+
+      <div class="gallery">
+        <!-- contact -->
+        <div class="cell" data-key="contact">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video controls data-poster="img/clean-fail-contact-spoon.jpg" src="videos/clean-fail-contact-spoon.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+          <div class="caption"><b>Large-spoon pickup.</b> The spoon stays on the plate instead of being lifted with the hand.</div>
+        </div>
+        <div class="cell" data-key="contact">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video controls data-poster="img/clean-fail-contact-fan.jpg" src="videos/clean-fail-contact-fan.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+          <div class="caption"><b>Fan guard.</b> Gloved hand closes on the guard but fails to establish grasp.</div>
+        </div>
+        <div class="cell" data-key="contact">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video controls data-poster="img/clean-fail-contact-paper.jpg" src="videos/clean-fail-contact-paper.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+          <div class="caption"><b>Paper strip.</b> Right hand pinches but the paper is not picked up.</div>
+        </div>
+        <!-- physics -->
+        <div class="cell" data-key="physics" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-physics-ruler.jpg" src="videos/clean-fail-physics-ruler.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Ruler shaft.</b> A rigid ruler becomes bent and uneven under handling.</div>
+        </div>
+        <div class="cell" data-key="physics" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-physics-board.jpg" src="videos/clean-fail-physics-board.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Rigid board.</b> A rigid circuit board stretches as it is moved.</div>
+        </div>
+        <div class="cell" data-key="physics" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-physics-veg.jpg" src="videos/clean-fail-physics-veg.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Vegetable shape.</b> A vegetable stretches and bends beyond its physical limits.</div>
+        </div>
+        <!-- permanence -->
+        <div class="cell" data-key="perm" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-perm-cucumber.jpg" src="videos/clean-fail-perm-cucumber.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Cucumber after occlusion.</b> The upper cucumber is missing after the hand moves away.</div>
+        </div>
+        <div class="cell" data-key="perm" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-perm-orange.jpg" src="videos/clean-fail-perm-orange.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Orange in the left hand.</b> Object briefly disappears from the grasp.</div>
+        </div>
+        <div class="cell" data-key="perm" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-perm-ring.jpg" src="videos/clean-fail-perm-ring.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Left-hand ring.</b> The gray band on the finger is missing when the hand returns into view.</div>
+        </div>
+        <!-- non-rigid -->
+        <div class="cell" data-key="nonrigid" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-nonrigid-paper.jpg" src="videos/clean-fail-nonrigid-paper.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Paper fold.</b> The paper stays flat instead of opening as the hand pulls it.</div>
+        </div>
+        <div class="cell" data-key="nonrigid" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-nonrigid-string.jpg" src="videos/clean-fail-nonrigid-string.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Pulling a string.</b> The string forms loose loops instead of pulling taut.</div>
+        </div>
+        <div class="cell" data-key="nonrigid" style="display:none;">
+          <div class="video-wrap"><div class="video-pair-labels"><span>GT</span><span>Ours</span></div><video data-autoplay controls data-poster="img/clean-fail-nonrigid-cord.jpg" src="videos/clean-fail-nonrigid-cord.mp4" muted loop playsinline preload="none"></video></div>
+          <div class="caption"><b>Cord deformation.</b> A coiled cord becomes distorted under manipulation.</div>
+        </div>
+      </div>
+
+      <p style="font-size:13px;color:var(--ink-dim);margin:32px 0 0;">
+        Two factors plausibly explain what remains. First, <b style="color:var(--ink);">irreducible uncertainty</b>: how an object responds to contact depends on mass, friction and stiffness, none perfectly recoverable from a single frame. Second, <b style="color:var(--ink);">the parts that matter most are not observable in pixels at all</b>: contacts and forces are never visible, and the object geometry under the hand is exactly what the hand occludes.
+      </p>
+    </section>
+
+
+    <!-- ============ 05 HUMANOID ============ -->
+    <section id="humanoid">
+      <div class="section-head">
+        <div class="num">05 · Humanoid transfer</div>
+        <h2>Transfer to <em>humanoids</em>.</h2>
+        <p class="lede">
+          We fine-tune Cosmos 3 Nano on ground-truth demonstrations from 11 tasks from the simulated bimanual benchmark of Yang et al. (2025), conditioning on a single start frame and the 138-dimensional humanoid state trajectory and predicting the following 16 frames (17 total at 10 Hz). All evaluations are performed on EgoVLA policy rollouts rather than demonstrations.
+        </p>
+      </div>
+
+      <!-- successful matches -->
+      <div class="humanoid-block">
+        <h3>Humanoid samples</h3>
+        <div class="sub">SIMULATOR ROLLOUTS AND SKELETON-CONDITIONED PREDICTIONS</div>
+        <div class="humanoid-row">
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-match-success.jpg" src="videos/clean-humanoid-match-success.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict match">match</span>Successful can unloading; prediction reproduces success.</p>
+          </div>
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-match-fail-unload.jpg" src="videos/clean-humanoid-match-fail-unload.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict match">match</span>Unsuccessful unloading attempt; prediction reproduces failure.</p>
+          </div>
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-match-fail-laptop.jpg" src="videos/clean-humanoid-match-fail-laptop.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict match">match</span>Laptop remains closed; prediction matches.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- humanoid failures -->
+      <div class="humanoid-block">
+        <h3>Where it still misses: object dynamics after contact.</h3>
+        <div class="sub">MISSED VERDICTS · SAME FAILURE FAMILY AS HUMAN VIDEO</div>
+        <div class="humanoid-row">
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-fail-box.jpg" src="videos/clean-humanoid-fail-box.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict miss">miss</span>Box stays in place instead of turning with the hand.</p>
+          </div>
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-fail-laptop.jpg" src="videos/clean-humanoid-fail-laptop.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict miss">miss</span>Hand rises, but the laptop stays closed.</p>
+          </div>
+          <div class="cell">
+            <div class="video-wrap"><div class="video-pair-labels"><span>Simulator</span><span>Prediction</span></div><video controls data-poster="img/clean-humanoid-fail-can.jpg" src="videos/clean-humanoid-fail-can.mp4" muted loop playsinline preload="none" data-autoplay></video></div>
+            <p class="cap"><span class="verdict miss">miss</span>Can stays high instead of dropping as fingers open.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="evaluation-summary">
+        <h3>Success agreement</h3>
+        <p>From each EgoVLA rollout we extract the 17 frames in which the task outcome is decided, e.g. the moment an object is released, a target is reached, or the simulator records success. We replay that clip’s actions through each variant and render the prediction.</p>
+        <p>The verdict is therefore about the window, not the episode. Seven of the eleven tasks have such a decisive moment: Close-Drawer, Insert-Cans, Open-Laptop, Pour-Balls, Push-Box, Sort-Cans and Stack-Can. The review covers six clips per task, 42 in total, with one reviewer and one seed per variant.</p>
+
+      </div>
+      <div class="table-scroll" role="region" aria-label="Humanoid evaluation metrics" tabindex="0">
+      <table class="metric-table">
+        <caption class="sr-only">Humanoid evaluation by model variant. Success agreement concerns selected 17-frame windows, not whole episodes.</caption>
+        <thead>
+          <tr><th>Variant</th><th>Hand SCS ↑</th><th>Object SCS ↑</th><th>Success agreement ↑</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Cosmos 3 (released)</td><td>0.63</td><td>0.70</td><td>0.67</td></tr>
+          <tr><td>+HUMAN (30k hours)</td><td>0.70<span class="delta">+0.07</span></td><td>0.73<span class="delta">+0.03</span></td><td>0.71<span class="delta">+0.04</span></td></tr>
+          <tr class="ours"><td>Ours</td><td>0.88<span class="delta">+0.17</span></td><td>0.79<span class="delta">+0.06</span></td><td>0.81<span class="delta">+0.10</span></td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <p style="font-size:13px;color:var(--ink-dim);margin:28px 0 0;">
+        Object fidelity is high in absolute terms for every variant (0.70–0.79), which we attribute to the simulated environment: its objects are rigid and relatively large, so the conditions that make object dynamics hard in ego-centric human video are largely absent. Conclusions about interaction fidelity thus depend heavily on the difficulty of the evaluation setting.
+      </p>
+    </section>
+
+
+    <!-- ============ FOOTER ============ -->
+    <footer id="bib">
+      <div class="citation-box">
+      <div class="citation-heading"><span>BIBTEX / CITATION</span><button type="button" class="copy-bib">Copy citation <span aria-hidden="true">↗</span></button></div>
+      <pre class="bib" id="citation">@misc{dong2026egoscaling,
+  title  = {What 30,000 Hours of Ego-centric Video Does Not Teach},
+  author = {Dong, Jiahua and Bagchi, Anurag and Jangir, Yash and Irshad, Muhammad Zubair
+            and Zakharov, Sergey and Hebert, Martial and Bharadhwaj, Homanga
+            and Wang, Yu-Xiong and Guizilini, Vitor Campagnolo and Tokmakov, Pavel},
+  year   = {2026}
+}</pre>
+      <p class="citation-status" role="status"></p>
+      </div>
+      <div class="footer-bottom"><span>Ego-centric world models</span><a href="#top">Back to the top ↑</a></div>
+    </footer>
+
+  </main>
+</div>
+
+<script src="js/paper-data.js"></script>
+<script src="js/teaser-scaling.js"></script>
+<script src="js/scaling.js"></script>
+<script src="js/dataset.js"></script>
+<script src="js/playback.js"></script>
+<script src="js/main.js"></script>
+<script src="js/teaser-data.js"></script>
+<script src="js/media.js"></script>
+</body>
+</html>
