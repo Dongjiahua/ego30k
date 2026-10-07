@@ -210,7 +210,7 @@
     <section id="findings">
       <div class="section-head">
         <div class="num">02 · Findings</div>
-        <h2>Scaling models the agent well, but <em>its effects on the world lag behind</em>.</h2>
+        <h2>Scaling brings the agent near saturation but <em>leaves object interaction far behind</em>.</h2>
         <p class="lede">
           Because we ask whether generic models of object dynamics can be learned from ego-centric human video, we evaluate out of distribution. Our evaluation set comes from a separate recording campaign: none of its sessions appear in training, and since platform, operators and sites all differ, no location or participant is shared. 37% of its environment categories, accounting for a quarter of its clips, never appear in training.
         </p>
@@ -254,23 +254,23 @@
       <div class="takeaway">
         <div>
           <div class="k">Finding 1</div>
-          <div class="v">The agent saturates early; object fidelity converges far below it.</div>
-          <div class="d">Agent SCS gains only <span class="mono">+0.06</span> between 3k and 30k hours and fits an asymptote at <span class="mono">0.811</span>. The object curve keeps rising but from a much lower base, and its ceiling lies far below.</div>
+          <div class="v">Conditioning saturates the agent with far less data.</div>
+          <div class="d">Supplying the projected skeleton lets <span class="mono">300</span> hours reach the agent fidelity that unconditioned training attains only at roughly <span class="mono">15k</span> hours &mdash; a <span class="mono">≈50×</span> reduction &mdash; and both designs converge to nearly the same limit (<span class="mono">0.800</span> and <span class="mono">0.811</span>).</div>
         </div>
         <div>
           <div class="k">Finding 2</div>
-          <div class="v">The agent's data gains can be substituted by conditioning.</div>
-          <div class="d"><span class="mono">300</span> hours with skeleton conditioning reaches the agent fidelity that unconditioned training attains at roughly <span class="mono">15k</span> hours &mdash; a <span class="mono">≈50×</span> reduction &mdash; and both designs converge to nearly the same limit.</div>
+          <div class="v">With the agent saturated, object interaction converges far below it.</div>
+          <div class="d">Object fidelity improves by only <span class="mono">0.09</span> SCS across two orders of magnitude and decelerates (<span class="mono">+0.056</span> from 300 to 3k hours, <span class="mono">+0.035</span> from 3k to 30k). Its fitted asymptote is <span class="mono">0.565</span>, of which <span class="mono">93%</span> is already realized at 30k hours.</div>
         </div>
         <div>
           <div class="k">Finding 3</div>
-          <div class="v">The object ceiling can be raised, not just approached.</div>
-          <div class="d">A supervision scheme that shifts capacity from scene appearance toward object dynamics improves object fidelity, though a substantial gap remains.</div>
+          <div class="v">Neither more data nor a larger model closes the gap.</div>
+          <div class="d">Scaling the model <span class="mono">4×</span> (Super) leaves agent fidelity virtually unchanged and raises the object ceiling by only <span class="mono">0.034</span> SCS; closing the remaining <span class="mono">0.205</span> to the agent ceiling at that rate would take roughly six more quadruplings.</div>
         </div>
       </div>
 
       <p style="font-size:13px;color:var(--ink-dim);margin:32px 0 0;">
-        Normalized by the maximum score each category can attain, the agent converges to <b style="color:var(--ink);">86% of its measurable range</b>, and objects to <b style="color:var(--ink);">63%</b>. The limitation is not that object dynamics improve slowly with data &mdash; they improve steadily &mdash; but that the level they converge toward lies far below the agent's.
+        Normalized by the maximum score each category can attain, the agent converges to <b style="color:var(--ink);">86% of its measurable range</b>, and objects to <b style="color:var(--ink);">63%</b>. The limitation is therefore not that object dynamics improve slowly with data, but that the level they improve toward lies far below the agent&rsquo;s.
       </p>
     </section>
 
