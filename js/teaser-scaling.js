@@ -53,13 +53,22 @@ const TEASER_SCALING = Object.freeze({
       if (initial) return;
       frame.classList.add('is-swapping');
       prediction.load();
-      prediction.addEventListener('loadeddata', () => {
-        if (Number.isFinite(leader.currentTime)) prediction.currentTime = Math.min(leader.currentTime, Math.max(0, prediction.duration - .001));
-        if ((wasPlaying && !leader.paused) || playButton?.dataset.playing === 'true') prediction.play().catch(() => {});
+      // Safari may not fire 'loadeddata' for a paused video, so accept any sign of
+      // progress and never leave the frame dimmed for more than 1.5 s.
+      let settled = false;
+      const ready = () => {
+        if (settled) return; settled = true;
+        events.forEach(type => prediction.removeEventListener(type, ready));
+        clearTimeout(fallback);
         frame.classList.remove('is-swapping');
+        if (Number.isFinite(leader.currentTime) && Number.isFinite(prediction.duration))
+          prediction.currentTime = Math.min(leader.currentTime, Math.max(0, prediction.duration - .08));
+        if ((wasPlaying && !leader.paused) || playButton?.dataset.playing === 'true') prediction.play().catch(() => {});
         if (!active) playFromStart();
-      }, { once: true });
-      prediction.addEventListener('error', () => frame.classList.remove('is-swapping'), { once: true });
+      };
+      const events = ['loadeddata', 'canplay', 'playing', 'error'];
+      events.forEach(type => prediction.addEventListener(type, ready));
+      const fallback = setTimeout(ready, 1500);
     }
 
     apply(TEASER_SCALING.default, true);
@@ -116,6 +125,7 @@ const TEASER_SCALING = Object.freeze({
         return true;
       },
       cancel,
+      isActive: () => active,
     };
     ['click', 'input'].forEach(type => root.addEventListener(type, event => {
       if (event.isTrusted && !driving) cancel();

@@ -82,6 +82,28 @@ function pointTooltip(svg, point, message) {
   point.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
 }
 
+function asymptoteTooltip(svg, hit, line, message) {
+  const card = svg.closest('.plot-card');
+  const tipEl = () => {
+    let tip = card.querySelector('.plot-tooltip');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'plot-tooltip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true; card.appendChild(tip); }
+    return tip;
+  };
+  const show = event => {
+    const tip = tipEl(), parent = card.getBoundingClientRect(), box = hit.getBoundingClientRect();
+    tip.textContent = message; tip.hidden = false;
+    const x = (event?.clientX ?? box.left + box.width / 2) - parent.left;
+    tip.style.left = `${Math.max(8, Math.min(x - tip.offsetWidth / 2, parent.width - tip.offsetWidth - 8))}px`;
+    tip.style.top = `${box.top + box.height / 2 - parent.top - tip.offsetHeight - 10}px`;
+    line.setAttribute('opacity', 1); line.setAttribute('stroke-width', 2.2);
+  };
+  const hide = () => { const tip = card.querySelector('.plot-tooltip'); if (tip) tip.hidden = true; line.setAttribute('opacity', .75); line.setAttribute('stroke-width', 1.3); };
+  hit.addEventListener('pointerenter', show);
+  hit.addEventListener('pointermove', show);
+  hit.addEventListener('pointerleave', hide);
+  hit.addEventListener('click', show);
+}
+
 function renderPlot(svg, opts) {
   const previous = svg._plotOptions;
   svg._plotOptions = opts;
@@ -133,10 +155,13 @@ function renderPlot(svg, opts) {
   opts.seriesKeys.forEach(key => {
     const a = opts.data[key]?.asymptote;
     if (a == null || a < opts.yDomain[0] || a > opts.yDomain[1]) return;
-    const line = mk('line', { x1: pad.l, x2: W - pad.r, y1: yOf(a), y2: yOf(a), stroke: STYLE[key].color, 'stroke-width': 1.3,
+    const y = yOf(a), message = `${STYLE[key].label} · asymptote ${a.toFixed(3)} SCS`;
+    const line = mk('line', { x1: pad.l, x2: W - pad.r, y1: y, y2: y, stroke: STYLE[key].color, 'stroke-width': 1.3,
       'stroke-dasharray': '1.5 3.5', 'stroke-linecap': 'round', opacity: .75, class: 'plot-asymptote', 'data-series': key });
-    line.appendChild(mk('title', {}, `${STYLE[key].label} · fitted asymptote ${a.toFixed(3)} SCS`));
-    svg.appendChild(line);
+    const hit = mk('line', { x1: pad.l, x2: W - pad.r, y1: y, y2: y, stroke: 'transparent', 'stroke-width': 9,
+      class: 'plot-asymptote-hit', role: 'img', 'aria-label': message });
+    svg.appendChild(line); svg.appendChild(hit);
+    asymptoteTooltip(svg, hit, line, message);
   });
   opts.seriesKeys.forEach(key => {
     const series = opts.data[key], style = STYLE[key];
@@ -282,6 +307,12 @@ function decorateScaleStops(svg, g) {
     });
   });
   svg._scaleGeom = g;
+  // A redraw during the opening story keeps the partially built plot.
+  if (window.teaserStory?.isActive?.() && scaleState.revealTarget) {
+    const w = revealWidthFor(svg, scaleState.revealTarget);
+    svg.querySelectorAll('.trace-reveal').forEach(rect => rect.setAttribute('width', w));
+    plotPending.delete(svg);
+  }
   updateScaleVisuals(svg);
 }
 function revealScaleStops(hours) {
@@ -332,9 +363,9 @@ function revealOverviewTo(hours, duration) {
   const rects = [...svg.querySelectorAll('.trace-reveal')];
   if (!rects.length) return Promise.resolve();
   rects.forEach(rect => cancelAnimationFrame(plotFrames.get(rect)));
-  const full = Number(rects[0].dataset.width);
+  scaleState.revealTarget = hours;
   const from = Number(rects[0].getAttribute('width')) || 0;
-  const to = hours >= 30000 ? full : Math.min(full, g.xOf(hours) - (g.pad.l - 8) + 9);
+  const to = revealWidthFor(svg, hours);
   if (plotMotion.matches || duration <= 0 || to <= from) {
     rects.forEach(rect => rect.setAttribute('width', Math.max(from, to)));
     svg._onTrace?.(Math.max(from, to));
@@ -342,17 +373,38 @@ function revealOverviewTo(hours, duration) {
   }
   return new Promise(resolve => {
     const start = performance.now();
+    let done = false;
+    // Always land exactly on the target, even if animation frames are paused
+    // (background tab) or the plot is redrawn mid-animation.
+    const settle = () => {
+      if (done) return; done = true;
+      const w = revealWidthFor(svg, hours);
+      svg.querySelectorAll('.trace-reveal').forEach(rect => { cancelAnimationFrame(plotFrames.get(rect)); rect.setAttribute('width', w); });
+      svg._onTrace?.(w);
+      resolve();
+    };
     const frame = now => {
+      if (done) return;
       const t = Math.min(1, (now - start) / duration);
       const eased = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
       const width = from + (to - from) * eased;
-      rects.forEach(rect => rect.setAttribute('width', width));
+      svg.querySelectorAll('.trace-reveal').forEach(rect => rect.setAttribute('width', width));
       svg._onTrace?.(width);
       if (t < 1) plotFrames.set(rects[0], requestAnimationFrame(frame));
-      else resolve();
+      else settle();
     };
     plotFrames.set(rects[0], requestAnimationFrame(frame));
+    setTimeout(settle, duration + 300);
   });
+}
+// Reveal width that just includes the marker at `hours` (taken from the drawn marker).
+function revealWidthFor(svg, hours) {
+  const g = svg._scaleGeom, rect = svg.querySelector('.trace-reveal');
+  const full = Number(rect?.dataset.width || 0);
+  if (!g || hours >= 30000) return full;
+  const point = svg.querySelector(`.plot-point[data-hours="${hours}"]`);
+  const x = point ? Number(point.getAttribute('cx')) : g.xOf(hours);
+  return Math.min(full, x - (g.pad.l - 8) + 10);
 }
 function finishOverviewTrace() {
   const svg = document.getElementById('plot-overview');
@@ -362,6 +414,15 @@ function finishOverviewTrace() {
 }
 window.teaserPlot = { revealTo: revealOverviewTo, finish: finishOverviewTrace, select: selectScale, stops: SCALE_STOPS };
 
+// Figure 1: on desktop the plot card matches the height of the GT/prediction column.
+function overviewHeight() {
+  if (window.innerWidth <= 760) return 280;
+  const svg = document.getElementById('plot-overview');
+  const card = svg?.closest('.plot-card'), sample = document.getElementById('hero-comparison');
+  if (!card || !sample || !sample.offsetHeight) return 360;
+  const overhead = card.offsetHeight - svg.getBoundingClientRect().height;
+  return Math.round(Math.max(300, Math.min(560, sample.offsetHeight - overhead)));
+}
 function renderOverview() {
   renderPlot(document.getElementById('plot-overview'), {
     yDomain: [.3, .85], yTicks: [.3, .4, .5, .6, .7, .8],
@@ -369,7 +430,7 @@ function renderOverview() {
     seriesKeys: ['overview_agent', 'overview_object'], data: PAPER_PLOTS.overview,
     showExtrap: false, directLabels: true, exact: true,
     afterRender: decorateScaleStops, onReveal: revealScaleStops, compactTicks: SCALE_STOPS,
-    duration: 3600, height: () => window.innerWidth > 760 ? 360 : 280,
+    duration: 3600, height: overviewHeight,
   });
 }
 
@@ -479,6 +540,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if (target._plotOptions) renderPlot(target, target._plotOptions);
     }));
     document.querySelectorAll('.plot-card > svg').forEach(svg => { widths.set(svg, Math.round(svg.clientWidth)); resizer.observe(svg); });
+    const sample = document.getElementById('hero-comparison');
+    if (sample) new ResizeObserver(() => {
+      const svg = document.getElementById('plot-overview');
+      if (svg?._plotOptions && svg.viewBox.baseVal.height !== overviewHeight()) renderPlot(svg, svg._plotOptions);
+    }).observe(sample);
   }
   plotMotion.addEventListener('change', () => {
     if (plotMotion.matches) document.querySelectorAll('.trace-reveal').forEach(rect => {

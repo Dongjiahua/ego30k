@@ -274,7 +274,9 @@
       try {
         await load(controller);
         if (controller.signal.aborted) return;
-        const target = leader.ended ? 0 : leader.currentTime;
+        // Restart when parked at (or just before) the end, e.g. after a play-once comparison.
+        const atEnd = leader.ended || (Number.isFinite(leader.duration) && leader.duration - leader.currentTime < .15);
+        const target = atEnd ? 0 : leader.currentTime;
         videos.forEach(video => { video.currentTime = target; });
         await Promise.all(videos.map(video => video.play()));
         if (controller.signal.aborted) return;
@@ -313,7 +315,13 @@
     leader.addEventListener('ended', () => {
       if (!playing) return;
       // Figure 1 plays each sample once and holds its last frame.
-      if (root.dataset.loop === 'once') { pause(); return; }
+      if (root.dataset.loop === 'once') {
+        pause();
+        // Safari renders nothing for a video paused exactly at its end: park every
+        // video just before the end so the final frame stays on screen.
+        videos.forEach(v => { if (Number.isFinite(v.duration)) v.currentTime = Math.max(0, v.duration - .08); });
+        return;
+      }
       pause(); position = 0; videos.forEach(v => { v.currentTime = 0; }); play();
     });
     if ('IntersectionObserver' in window) {
