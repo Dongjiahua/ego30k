@@ -2,7 +2,7 @@
 const STYLE = {
   // Paper colour code: Figure 1 agent blue / object orange; Figures 4-5 colour by
   // model family (Edge blue, Nano red, Super green, Ours teal), dashed = baseline.
-  overview_agent: { color: 'var(--fig-agent)', dashed: false, label: 'Agent (hands)', family: 'nano' },
+  overview_agent: { color: 'var(--fig-agent)', dashed: false, label: 'Agent', family: 'nano' },
   overview_object: { color: 'var(--fig-object)', dashed: false, label: 'Object', family: 'nano' },
   nano_baseline: { color: 'var(--fig-nano)', dashed: true, label: 'Nano baseline', family: 'nano' },
   nano_skeleton: { color: 'var(--fig-nano)', dashed: false, label: 'Nano + skeleton', family: 'nano' },
@@ -426,7 +426,7 @@ function overviewHeight() {
 function renderOverview() {
   renderPlot(document.getElementById('plot-overview'), {
     yDomain: [.3, .85], yTicks: [.3, .4, .5, .6, .7, .8],
-    yLabel: 'Agent (hands) and object fidelity · Nano baseline',
+    yLabel: 'Agent and object fidelity · Nano baseline',
     seriesKeys: ['overview_agent', 'overview_object'], data: PAPER_PLOTS.overview,
     showExtrap: false, directLabels: true, exact: true,
     afterRender: decorateScaleStops, onReveal: revealScaleStops, compactTicks: SCALE_STOPS,
